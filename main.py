@@ -61,7 +61,7 @@ def calc_single(d, t, col_num, sheet_name):
         start_index = peak_min_map[peak][0]
         end_index = peak_min_map[peak][1]
         if start_index < 0:
-            end_index = 0
+            start_index = 0
         if end_index > len(col_data) - 1:
             end_index = len(col_data) - 1
         amplitude.append(col_data.iloc[peak] - col_data.iloc[start_index])
@@ -99,7 +99,8 @@ def calc_single(d, t, col_num, sheet_name):
 
 
 # Load data
-file_path = 'data.xlsx'  # Update the file path accordingly
+file_path = '0.1 data.xlsx'  # Update the file path accordingly
+output_path = '0.1 output.xlsx'
 fret_data = pd.read_excel(file_path, sheet_name=0)
 rhod_data = pd.read_excel(file_path, sheet_name=1)
 
@@ -121,7 +122,7 @@ for c in rhod_data.columns.values[1:5]:
 
 result_rhod = pd.concat(df_rhod)
 
-with pd.ExcelWriter('output.xlsx') as writer:
+with pd.ExcelWriter(output_path) as writer:
     result_fret.T.to_excel(writer, sheet_name='Fret')
     result_rhod.T.to_excel(writer, sheet_name='Rhod')
 
