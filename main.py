@@ -99,26 +99,24 @@ def calc_single(d, t, col_num, sheet_name):
 
 
 # Load data
-file_path = '0.1 data.xlsx'  # Update the file path accordingly
-output_path = '0.1 output.xlsx'
+file_path = 'data.xlsx'  # Update the file path accordingly
+output_path = 'output.xlsx'
 fret_data = pd.read_excel(file_path, sheet_name=0)
 rhod_data = pd.read_excel(file_path, sheet_name=1)
 
 time = fret_data['Time (Min)']
 df_fret = []
-for c in fret_data.columns.values[1:5]:
+for c in fret_data.columns.values[1:]:
     data = fret_data[c]
     df_fret.append(calc_single(data, time, c, 'Fret'))
-    df_fret.append(pd.DataFrame())
 
 result_fret = pd.concat(df_fret)
 
 time = rhod_data['Time (Min)']
 df_rhod = []
-for c in rhod_data.columns.values[1:5]:
+for c in rhod_data.columns.values[1:]:
     data = rhod_data[c]
     df_rhod.append(calc_single(data, time, c, 'Rhod'))
-    df_rhod.append(pd. DataFrame())
 
 result_rhod = pd.concat(df_rhod)
 
