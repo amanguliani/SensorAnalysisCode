@@ -6,6 +6,7 @@ from scipy.integrate import simps
 
 def tighten_peaks(peak_data, s, e, peak):
     peak_pct = peak_data.pct_change()
+    print(peak_pct[s:e])
     new_s = peak_pct[s:peak].idxmax() - 5
     new_e = peak_pct[peak:e].idxmin() + 5
     return [new_s, new_e]
