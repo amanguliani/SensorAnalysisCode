@@ -6,9 +6,10 @@ from scipy.integrate import simps
 
 def tighten_peaks(peak_data, s, e, peak):
     peak_pct = peak_data.pct_change()
-    print(peak_pct[s:e])
     new_s = peak_pct[s:peak].idxmax() - 5
-    new_e = peak_pct[peak:e].idxmin() + 5
+    var = peak_pct[::-1].pct_change()
+    new_e = var[len(var)-e:len(var)-peak].idxmax() + 3
+    # new_e = peak_pct[peak:e].idxmin() + 5
     return [new_s, new_e]
 
 
@@ -44,7 +45,7 @@ def calc_single(d, t, col_num, sheet_name):
     peak_times = col_time.iloc[peaks]
 
     # Plotting Peak data first.
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(40, 22))
     plt.plot(t, d, label='data', color='blue')
     plt.plot(peak_times, peak_values, 'rX', label='Peaks')  # 'X' markers for peaks
     plt.xlabel('Time (Min)')
@@ -100,7 +101,7 @@ def calc_single(d, t, col_num, sheet_name):
 
 
 # Load data
-file_path = 'data.xlsx'  # Update the file path accordingly
+file_path = 'Sr data.xlsx'  # Update the file path accordingly
 output_path = 'output.xlsx'
 fret_data = pd.read_excel(file_path, sheet_name=0)
 rhod_data = pd.read_excel(file_path, sheet_name=1)
