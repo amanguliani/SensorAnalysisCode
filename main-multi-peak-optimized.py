@@ -45,7 +45,7 @@ def calc_single(d, t, col_num, sheet_name):
     peak_times = col_time.iloc[peaks]
 
     # Plotting Peak data first.
-    plt.figure(figsize=(40, 22))
+    plt.figure(figsize=(5, 5))
     plt.plot(t, d, label='data', color='blue')
     plt.plot(peak_times, peak_values, 'rX', label='Peaks')  # 'X' markers for peaks
     plt.xlabel('Time (Min)')
@@ -96,7 +96,7 @@ def calc_single(d, t, col_num, sheet_name):
     plt.grid(True)
     plt.legend()
     plt.draw()
-    plt.interactive(False)
+    plt.interactive(True)
     return peak_data
 
 
@@ -126,4 +126,5 @@ with pd.ExcelWriter(output_path) as writer:
     result_fret.T.to_excel(writer, sheet_name='Fret')
     result_rhod.T.to_excel(writer, sheet_name='Rhod')
 
+plt.close()
 plt.show()

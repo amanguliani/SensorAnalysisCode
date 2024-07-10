@@ -19,7 +19,7 @@ def calc_single(d, t, col_num, sheet_name):
     peak_times = col_time.iloc[peaks]
 
     # Plotting Peak data first.
-    plt.figure(figsize=(40, 22))
+    plt.figure(figsize=(5, 5))
     plt.plot(t, d, label='data', color='blue')
     plt.plot(peak_times, peak_values, 'rX', label='Peaks')
     plt.xlabel('Time (Min)')
@@ -30,8 +30,6 @@ def calc_single(d, t, col_num, sheet_name):
     duration = []
     areas = []
     percentage_change = []
-
-    print(results_widths[2])
 
     for width, height, left, right in zip(results_widths[0], results_widths[1], results_widths[2], results_widths[3]):
         left = round(left)
@@ -57,19 +55,19 @@ def calc_single(d, t, col_num, sheet_name):
     plt.interactive(False)
     peak_data = pd.DataFrame(
         {'Column': col_num,
-         'Time of peak occurrence': peak_times[:5],
-         'Peak Values': peak_values[:5],
-         'Amplitude of Peak': amplitude[:5],
-         'Duration of Peak': duration[:5],
-         '% Change in baseline': percentage_change[:5],
-         'Area Under Curve': areas[:5]
+         'Time of peak occurrence': peak_times[1:6],
+         'Peak Values': peak_values[1:6],
+         'Amplitude of Peak': amplitude[1:6],
+         'Duration of Peak': duration[1:6],
+         '% Change in baseline': percentage_change[1:6],
+         'Area Under Curve': areas[1:6]
          })
     return peak_data
 
 
 # Load data
-file_path = 'PLC data.xlsx'  # Update the file path accordingly
-output_path = 'output.xlsx'
+file_path = 'Sr Data.xlsx'  # Update the file path accordingly
+output_path = 'Sr data output.xlsx'
 fret_data = pd.read_excel(file_path, sheet_name=0)
 rhod_data = pd.read_excel(file_path, sheet_name=1)
 
@@ -93,4 +91,5 @@ with pd.ExcelWriter(output_path) as writer:
     result_fret.T.to_excel(writer, sheet_name='Fret')
     result_rhod.T.to_excel(writer, sheet_name='Rhod')
 
+plt.close()
 plt.show()
