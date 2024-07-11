@@ -83,12 +83,12 @@ def calc_single(d, t, col_num, sheet_name):
     # Combining time and peak values into a DataFrame for display
     peak_data = pd.DataFrame(
         {'Column': col_num,
-         'Time of peak occurrence': peak_times[:5],
-         'Peak Values': peak_values[:5],
-         'Amplitude of Peak': amplitude[:5],
-         'Duration of Peak': duration[:5],
-         '% Change in baseline': percentage_change[:5],
-         'Area Under Curve': areas[:5]
+         'Time of peak occurrence': peak_times[:6],
+         'Peak Values': peak_values[:6],
+         'Amplitude of Peak': amplitude[:6],
+         'Duration of Peak': duration[:6],
+         '% Change in baseline': percentage_change[:6],
+         'Area Under Curve': areas[:6]
          })
 
     plt.title(
