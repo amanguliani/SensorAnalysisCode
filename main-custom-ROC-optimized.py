@@ -15,34 +15,37 @@ def percent_change(new, previous):
         return float('inf')
 
 
-def find_start_end_indexes_for_peak(data, peaks):
+def find_peak_boundaries(data, peaks):
     result = {}
+    percent_drop_min = 10
+    rate_of_change_left = 1
+    rate_of_change_right = 0.6
 
     for peak in peaks:
         # Look for the rise (local minimum before the peak)
         left_base = peak
         left_fall_found = False
         while left_base > 0 and not left_fall_found:
-            if percent_change(data[left_base - 1], data[peak]) <= 10:
+            if percent_change(data[left_base - 1], data[peak]) <= percent_drop_min:
                 left_base -= 1
             else:
                 left_fall_found = True
                 while (left_base > 0
                        and data[left_base - 1] < data[left_base]
-                       and percent_change(data[left_base - 1], data[left_base]) > 1):
+                       and percent_change(data[left_base - 1], data[left_base]) > rate_of_change_left):
                     left_base -= 1
 
         # Look for the fall (local minimum after the peak)
         right_base = peak
         right_fall_found = False
         while right_base < len(data) - 1 and not right_fall_found:
-            if percent_change(data[right_base + 1], data[peak]) <= 10:
+            if percent_change(data[right_base + 1], data[peak]) <= percent_drop_min:
                 right_base += 1
             else:
                 right_fall_found = True
                 while (right_base < len(data) - 1
                        and data[right_base + 1] < data[right_base]
-                       and percent_change(data[right_base], data[right_base + 1]) > 0.6):
+                       and percent_change(data[right_base], data[right_base + 1]) > rate_of_change_right):
                     right_base += 1
 
         result[peak] = [left_base, right_base]
@@ -64,7 +67,7 @@ def calculate_single_col(data, time, col_number, sheet_name):
     plt.xlabel('Time (Min)')
     plt.ylabel('Value')
 
-    peak_index_map = find_start_end_indexes_for_peak(data, peaks)
+    peak_boundary_indexes = find_peak_boundaries(data, peaks)
 
     amplitudes = []
     durations = []
@@ -73,9 +76,9 @@ def calculate_single_col(data, time, col_number, sheet_name):
 
     # Do something here to get the start, end value & time for each peak accurately
 
-    for peak in peak_index_map:
-        start_index = peak_index_map[peak][0]
-        end_index = peak_index_map[peak][1]
+    for peak in peak_boundary_indexes:
+        start_index = peak_boundary_indexes[peak][0]
+        end_index = peak_boundary_indexes[peak][1]
 
         amplitudes.append(data.iloc[peak] - data.iloc[start_index])
         durations.append(time[end_index] - time[start_index])
