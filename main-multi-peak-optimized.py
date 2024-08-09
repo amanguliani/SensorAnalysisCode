@@ -101,7 +101,7 @@ def calc_single(d, t, col_num, sheet_name):
 
 
 # Load data
-file_path = 'Sr data.xlsx'  # Update the file path accordingly
+file_path = 'CaMKAR CY Sr2+ 1 mM DTT processes excel.xlsx'  # Update the file path accordingly
 output_path = 'output.xlsx'
 fret_data = pd.read_excel(file_path, sheet_name=0)
 rhod_data = pd.read_excel(file_path, sheet_name=1)
