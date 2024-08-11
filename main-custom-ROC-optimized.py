@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from scipy.signal import find_peaks, peak_prominences
+from scipy.signal import find_peaks
 from scipy.integrate import simps
 
 
@@ -15,11 +15,10 @@ def percent_change(new, previous):
         return float('inf')
 
 
-def find_peak_boundaries(data, peaks):
+def find_peak_boundaries(data, peaks, fall_percentage_change):
     result = {}
     percent_drop_min = 10
     rate_of_change_left = 1
-    rate_of_change_right = 0.6
 
     for peak in peaks:
         # Look for the rise (local minimum before the peak)
@@ -45,7 +44,7 @@ def find_peak_boundaries(data, peaks):
                 right_fall_found = True
                 while (right_base < len(data) - 1
                        and data[right_base + 1] < data[right_base]
-                       and percent_change(data[right_base], data[right_base + 1]) > rate_of_change_right):
+                       and percent_change(data[right_base], data[right_base + 1]) > fall_percentage_change):
                     right_base += 1
 
         result[peak] = [left_base, right_base]
@@ -53,7 +52,7 @@ def find_peak_boundaries(data, peaks):
     return result
 
 
-def calculate_single_col(data, time, col_number, sheet_name):
+def calculate_single_col(data, time, col_number, sheet_name, fall_percentage_change):
     # Find peaks
     peaks, properties = find_peaks(data, prominence=0.1)  # Increased prominence value
 
@@ -67,7 +66,7 @@ def calculate_single_col(data, time, col_number, sheet_name):
     plt.xlabel('Time (Min)')
     plt.ylabel('Value')
 
-    peak_boundary_indexes = find_peak_boundaries(data, peaks)
+    peak_boundary_indexes = find_peak_boundaries(data, peaks, fall_percentage_change)
 
     amplitudes = []
     durations = []
@@ -88,9 +87,8 @@ def calculate_single_col(data, time, col_number, sheet_name):
         # Using Simpson's rule for numerical integration
         x1, y1 = time.iloc[start_index], data.iloc[start_index]
         x2, y2 = time.iloc[end_index], data.iloc[end_index]
-        area_under_peak = simps(data.iloc[start_index:end_index], time.iloc[start_index:end_index]) - (
-                0.5 * (x2 - x1) * (y1 + y2))
-        areas.append(abs(area_under_peak))
+        peak_area = np.trapz(data.iloc[start_index:end_index], time.iloc[start_index:end_index])
+        areas.append(peak_area)
 
         plt.plot([x1, x2], [y1, y2], marker='o')
 
@@ -99,7 +97,6 @@ def calculate_single_col(data, time, col_number, sheet_name):
     plt.grid(True)
     plt.legend()
     plt.draw()
-    plt.interactive(True)
 
     return pd.DataFrame({'Column No': col_number,
                          'Time of peak occurrence': peak_times[:6],
@@ -111,7 +108,7 @@ def calculate_single_col(data, time, col_number, sheet_name):
                          })
 
 
-def process_sheet(file_name, sheet_number, sheet_name):
+def process_sheet(file_name, sheet_number, sheet_name, fall_percentage_change):
     data = pd.read_excel(file_name, sheet_name=sheet_number)
     time = data['Time (Min)']
     data_array = []
@@ -122,14 +119,14 @@ def process_sheet(file_name, sheet_number, sheet_name):
         fixed_col_data = col_data[:last_idx]
         fixed_col_time = time[:last_idx]
 
-        data_array.append(calculate_single_col(fixed_col_data, fixed_col_time, col_number, sheet_name))
+        data_array.append(calculate_single_col(fixed_col_data, fixed_col_time, col_number, sheet_name, fall_percentage_change))
 
     return data_array
 
 
-def process_data(file_name, output_name):
-    result_fret = pd.concat(process_sheet(file_name, 0, 'FRET'))
-    result_rhod = pd.concat(process_sheet(file_name, 1, 'RHOD'))
+def process_data(file_name, output_name, fret_fall_percent, rhod_fall_percent):
+    result_fret = pd.concat(process_sheet(file_name, 0, 'FRET', fret_fall_percent))
+    result_rhod = pd.concat(process_sheet(file_name, 1, 'RHOD', rhod_fall_percent))
 
     with pd.ExcelWriter(output_name) as writer:
         result_fret.T.to_excel(writer, sheet_name='Fret')
@@ -137,10 +134,11 @@ def process_data(file_name, output_name):
 
 
 # Load data
-file_name = 'CaMKAR CY Sr2+ 1 mM DTT processes excel.xlsx'  # Update the file path accordingly
+file_name = 'FRESCA 2.0 0.5 uM IO processed excel.xlsx'  # Update the file path accordingly
 output_name = 'output_test.xlsx'
+fret_fall_percent = 0.3
+rhod_fall_percent = 0.6
 
-process_data(file_name, output_name)
+process_data(file_name, output_name, fret_fall_percent, rhod_fall_percent)
 
-plt.close()
 plt.show()
