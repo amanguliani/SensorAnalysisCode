@@ -51,6 +51,24 @@ def find_peak_boundaries(data, peaks, fall_percentage_change):
 
     return result
 
+def calculate_slope(point1, point2):
+    """Calculates the slope given two points.
+
+    Args:
+        point1 (tuple): (x1, y1) coordinates of the first point
+        point2 (tuple): (x2, y2) coordinates of the second point
+
+    Returns:
+        float: The slope of the line defined by the two points.
+    """
+
+    x1, y1 = point1
+    x2, y2 = point2
+
+    if x2 - x1 == 0:
+        return float('inf')  # Avoid division by zero
+
+    return (y2 - y1) / (x2 - x1)
 
 def calculate_single_col(data, time, col_number, sheet_name, fall_percentage_change):
     # Find peaks
@@ -72,6 +90,10 @@ def calculate_single_col(data, time, col_number, sheet_name, fall_percentage_cha
     durations = []
     areas = []
     percentage_changes = []
+    time_to_peak = []
+    rise_rate = []
+    decay_rate = []
+    time_after_peak = []
 
     # Do something here to get the start, end value & time for each peak accurately
 
@@ -81,6 +103,10 @@ def calculate_single_col(data, time, col_number, sheet_name, fall_percentage_cha
 
         amplitudes.append(data.iloc[peak] - data.iloc[start_index])
         durations.append(time[end_index] - time[start_index])
+        time_to_peak.append(time[peak] - time[start_index])
+        rise_rate.append(calculate_slope((time[start_index], data[start_index]), (time[peak], data[peak])))
+        decay_rate.append(calculate_slope((time[peak], data[peak]), (time[end_index], data[end_index])))
+        time_after_peak.append(time[end_index])
         percentage_changes.append(
             (abs(data.iloc[end_index] - data.iloc[start_index]) / data.iloc[start_index]) * 100.0)
 
@@ -102,6 +128,10 @@ def calculate_single_col(data, time, col_number, sheet_name, fall_percentage_cha
                          'Time of peak occurrence': peak_times[:6],
                          'Peak Values': peak_values[:6],
                          'Amplitude of Peak': amplitudes[:6],
+                         'Time to Peak': time_to_peak[6],
+                         'Rate of Rise': rise_rate[:6],
+                         'Rate of Decay': decay_rate[:6],
+                         'Time after Peak': time_after_peak[:6],
                          'Duration of Peak': durations[:6],
                          '% Change from baseline': percentage_changes[:6],
                          'Area Under Curve': areas[:6]
