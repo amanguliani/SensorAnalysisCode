@@ -1,9 +1,10 @@
+from tkinter import Tk, filedialog
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 from scipy.signal import find_peaks
-from scipy.integrate import simps
 
 
 def percent_change(new, previous):
@@ -113,7 +114,7 @@ def calculate_single_col(data, time, col_number, sheet_name, fall_percentage_cha
         # Using Simpson's rule for numerical integration
         x1, y1 = time.iloc[start_index], data.iloc[start_index]
         x2, y2 = time.iloc[end_index], data.iloc[end_index]
-        peak_area = np.trapz(data.iloc[start_index:end_index], time.iloc[start_index:end_index])
+        peak_area = np.trapezoid(data.iloc[start_index:end_index], time.iloc[start_index:end_index])
         areas.append(peak_area)
 
         plt.plot([x1, x2], [y1, y2], marker='o')
@@ -128,7 +129,7 @@ def calculate_single_col(data, time, col_number, sheet_name, fall_percentage_cha
                          'Time of peak occurrence': peak_times[:6],
                          'Peak Values': peak_values[:6],
                          'Amplitude of Peak': amplitudes[:6],
-                         'Time to Peak': time_to_peak[6],
+                         'Time to Peak': time_to_peak[:6],
                          'Rate of Rise': rise_rate[:6],
                          'Rate of Decay': decay_rate[:6],
                          'Time after Peak': time_after_peak[:6],
@@ -163,12 +164,19 @@ def process_data(file_name, output_name, fret_fall_percent, rhod_fall_percent):
         result_rhod.T.to_excel(writer, sheet_name='Rhod')
 
 
-# Load data
-file_name = 'FRESCA 2.0 0.5 uM IO processed excel.xlsx'  # Update the file path accordingly
-output_name = 'output_test.xlsx'
-fret_fall_percent = 0.3
-rhod_fall_percent = 0.6
+if __name__ == "__main__":
+    Tk().withdraw()  # Hide the main Tkinter window
+    file_name = filedialog.askopenfilename(title="Select the input file", filetypes=[("Excel files", "*.xlsx")])
+    if not file_name:
+        print("No file selected. Exiting.")
+        exit()
 
-process_data(file_name, output_name, fret_fall_percent, rhod_fall_percent)
+    output_name = filedialog.asksaveasfilename(title="Save output file as", defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
+    if not output_name:
+        print("No output file selected. Exiting.")
+        exit()
+    fret_fall_percent = 0.3
+    rhod_fall_percent = 0.6
 
-plt.show()
+    process_data(file_name, output_name, fret_fall_percent, rhod_fall_percent)
+    plt.show()
