@@ -1,49 +1,72 @@
 from tkinter import Tk, filedialog
 
+import matplotlib
+matplotlib.use('Qt5Agg')
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 from scipy.signal import find_peaks
+from itertools import tee, islice, chain
 
+# Load configuration for the run
+CONFIG = {
+    "prominence": 0.08,
+    "percent_drop_min_left": 10,
+    "percent_drop_min_right": 10,
+    "rate_of_change_left": 1,
+    "fret_fall_percent": 0.3,
+    "rhod_fall_percent": 0.6
+}
+
+def previous_and_next(some_iterable):
+    prev, items, next = tee(some_iterable, 3)
+    prev = chain([None], prev)
+    next = chain(islice(next, 1, None), [None])
+    return zip(prev, items, next)
 
 def percent_change(new, previous):
     if previous == new:
         return 0
     try:
-        return (abs(float(new) - previous) / previous) * 100.0
+        return (abs(float(new) - previous) / previous) * 100.0 if previous != 0 else float('inf')
     except ZeroDivisionError:
         return float('inf')
 
+def calculate_slope(point1, point2):
+    x1, y1 = point1
+    x2, y2 = point2
+    return (y2 - y1) / (x2 - x1) if x2 != x1 else float('inf')
 
 def find_peak_boundaries(data, peaks, fall_percentage_change):
     result = {}
-    percent_drop_min = 10
-    rate_of_change_left = 1
 
-    for peak in peaks:
+    for previous, peak, next in previous_and_next(peaks):
+        left_bound = previous if previous is not None else 0
+        right_bound = next if next is not None else len(data) - 1
+
         # Look for the rise (local minimum before the peak)
         left_base = peak
         left_fall_found = False
-        while left_base > 0 and not left_fall_found:
-            if percent_change(data[left_base - 1], data[peak]) <= percent_drop_min:
+        while left_base > left_bound and not left_fall_found:
+            if percent_change(data[left_base - 1], data[peak]) <= CONFIG['percent_drop_min_left']:
                 left_base -= 1
             else:
                 left_fall_found = True
-                while (left_base > 0
+                while (left_base > left_bound
                        and data[left_base - 1] < data[left_base]
-                       and percent_change(data[left_base - 1], data[left_base]) > rate_of_change_left):
+                       and percent_change(data[left_base - 1], data[left_base]) > CONFIG['rate_of_change_left']):
                     left_base -= 1
 
         # Look for the fall (local minimum after the peak)
         right_base = peak
         right_fall_found = False
-        while right_base < len(data) - 1 and not right_fall_found:
-            if percent_change(data[right_base + 1], data[peak]) <= percent_drop_min:
+        while right_base < right_bound and not right_fall_found:
+            if percent_change(data[right_base + 1], data[peak]) <= CONFIG['percent_drop_min_right']:
                 right_base += 1
             else:
                 right_fall_found = True
-                while (right_base < len(data) - 1
+                while (right_base < right_bound
                        and data[right_base + 1] < data[right_base]
                        and percent_change(data[right_base], data[right_base + 1]) > fall_percentage_change):
                     right_base += 1
@@ -52,28 +75,9 @@ def find_peak_boundaries(data, peaks, fall_percentage_change):
 
     return result
 
-def calculate_slope(point1, point2):
-    """Calculates the slope given two points.
-
-    Args:
-        point1 (tuple): (x1, y1) coordinates of the first point
-        point2 (tuple): (x2, y2) coordinates of the second point
-
-    Returns:
-        float: The slope of the line defined by the two points.
-    """
-
-    x1, y1 = point1
-    x2, y2 = point2
-
-    if x2 - x1 == 0:
-        return float('inf')  # Avoid division by zero
-
-    return (y2 - y1) / (x2 - x1)
-
 def calculate_single_col(data, time, col_number, sheet_name, fall_percentage_change):
     # Find peaks
-    peaks, properties = find_peaks(data, prominence=0.1)  # Increased prominence value
+    peaks, properties = find_peaks(data, prominence=CONFIG['prominence'])  # Increased prominence value
 
     peak_values = data.iloc[peaks]
     peak_times = time.iloc[peaks]
@@ -155,9 +159,9 @@ def process_sheet(file_name, sheet_number, sheet_name, fall_percentage_change):
     return data_array
 
 
-def process_data(file_name, output_name, fret_fall_percent, rhod_fall_percent):
-    result_fret = pd.concat(process_sheet(file_name, 0, 'FRET', fret_fall_percent))
-    result_rhod = pd.concat(process_sheet(file_name, 1, 'RHOD', rhod_fall_percent))
+def process_data(file_name, output_name):
+    result_fret = pd.concat(process_sheet(file_name, 0, 'FRET', CONFIG['fret_fall_percent']))
+    result_rhod = pd.concat(process_sheet(file_name, 1, 'RHOD', CONFIG['rhod_fall_percent']))
 
     with pd.ExcelWriter(output_name) as writer:
         result_fret.T.to_excel(writer, sheet_name='Fret')
@@ -175,8 +179,6 @@ if __name__ == "__main__":
     if not output_name:
         print("No output file selected. Exiting.")
         exit()
-    fret_fall_percent = 0.3
-    rhod_fall_percent = 0.6
 
-    process_data(file_name, output_name, fret_fall_percent, rhod_fall_percent)
+    process_data(file_name, output_name)
     plt.show()
