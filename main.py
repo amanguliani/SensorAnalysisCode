@@ -11,7 +11,7 @@ from itertools import tee, islice, chain
 
 # Load configuration for the run
 CONFIG = {
-    "prominence": 0.08,
+    "prominence": 0.05,
     "percent_drop_min_left": 10,
     "percent_drop_min_right": 10,
     "rate_of_change_left": 1,
