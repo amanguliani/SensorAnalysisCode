@@ -53,7 +53,7 @@ if __name__ == "__main__":
     df_rhod = pd.read_excel(xls, sheet_name='Rhod')
 
     # Define the measurement types to extract
-    measurement_types = ["Time to Peak", "Amplitude of Peak", "Duration of Peak", "Area Under Curve"]
+    measurement_types = ["Rate of Rise", "Rate of Decay"]
 
     # Transform data for both sheets
     transformed_fret = transform_data(df_fret)
