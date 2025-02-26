@@ -75,6 +75,14 @@ def find_peak_boundaries(data, peaks, fall_percentage_change):
 
     return result
 
+def calculate_decay_rate(values,times):
+    decay_rate = np.gradient(values, times)  # Compute rate of change
+    return np.mean(decay_rate)
+
+def calculate_rise_rate(values,times):
+    rise_rate = np.gradient(values, times)  # Compute rate of change
+    return np.mean(rise_rate)
+
 def calculate_single_col(data, time, col_number, sheet_name, fall_percentage_change):
     # Find peaks
     peaks, properties = find_peaks(data, prominence=CONFIG['prominence'])  # Increased prominence value
@@ -97,7 +105,11 @@ def calculate_single_col(data, time, col_number, sheet_name, fall_percentage_cha
     percentage_changes = []
     time_to_peak = []
     rise_rate = []
+    rise_slope = []
+
     decay_rate = []
+    decay_slope = []
+
     time_after_peak = []
 
     # Do something here to get the start, end value & time for each peak accurately
@@ -109,9 +121,15 @@ def calculate_single_col(data, time, col_number, sheet_name, fall_percentage_cha
         amplitudes.append(data.iloc[peak] - data.iloc[start_index])
         durations.append(time[end_index] - time[start_index])
         time_to_peak.append(time[peak] - time[start_index])
-        rise_rate.append(calculate_slope((time[start_index], data[start_index]), (time[peak], data[peak])))
-        decay_rate.append(calculate_slope((time[peak], data[peak]), (time[end_index], data[end_index])))
+
+        rise_rate.append(calculate_rise_rate(data[start_index:peak], time[start_index:peak]))
+        rise_slope.append(calculate_slope((time[start_index], data[start_index]), (time[peak], data[peak])))
+
+        decay_rate.append(calculate_decay_rate(data[peak:end_index], time[peak:end_index]))
+        decay_slope.append(calculate_slope((time[peak], data[peak]), (time[end_index], data[end_index])))
+
         time_after_peak.append(time[end_index])
+
         percentage_changes.append(
             (abs(data.iloc[end_index] - data.iloc[start_index]) / data.iloc[start_index]) * 100.0)
 
@@ -135,7 +153,9 @@ def calculate_single_col(data, time, col_number, sheet_name, fall_percentage_cha
                          'Amplitude of Peak': amplitudes[:6],
                          'Time to Peak': time_to_peak[:6],
                          'Rate of Rise': rise_rate[:6],
+                         'Slope of Rise': rise_slope[:6],
                          'Rate of Decay': decay_rate[:6],
+                         'Slope of Decay': decay_slope[:6],
                          'Time after Peak': time_after_peak[:6],
                          'Duration of Peak': durations[:6],
                          '% Change from baseline': percentage_changes[:6],

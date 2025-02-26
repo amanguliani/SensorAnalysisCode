@@ -1,29 +1,41 @@
-import pandas as pd
 from tkinter import Tk, filedialog
 
-def extract_field(input_df, field_name):
-    """
-    Extract Amplitude of Peak values for all unique Column No values where:
-    - Time of Peak Occurrence is not empty.
-    """
-    # Transpose the DataFrame for easier processing
-    transposed = input_df.transpose()
-    transposed.columns = transposed.iloc[0]  # Set the first row as column headers
-    transposed = transposed[1:]  # Drop the first row
+import pandas as pd
 
-    # Initialize a dictionary to hold amplitudes for each Column No
-    amplitude_dict = {}
+# Function to transform the data
+def transform_data(df):
+    # Identify the row containing 'Column No'
+    col_no_row = df.iloc[0, 1:].astype(float).values
+    transformed_data = []
 
-    # Process for each unique Column No
-    for col_no in transposed["Column No"].unique():
-        filtered = transposed[
-            (transposed["Column No"] == col_no) & (~transposed["Time of peak occurrence"].isna())
-        ]
-        amplitude_values = filtered[field_name].astype(float).dropna()
-        amplitude_dict[col_no] = amplitude_values.tolist()
+    for measurement in measurement_types:
+        # Find the row index of the measurement type
+        row_idx = df[df.iloc[:, 0] == measurement].index
+        if row_idx.empty:
+            continue  # Skip if the measurement type is not found
 
-    return amplitude_dict
+        row_idx = row_idx[0]  # Get the row index
+        data_values = df.iloc[row_idx, 1:].values  # Extract data values
 
+        # Track changes in 'Column No'
+        prev_col_no = col_no_row[0]
+        temp_data = []
+
+        for i, (col_no, value) in enumerate(zip(col_no_row, data_values)):
+            if col_no != prev_col_no and temp_data:
+                transformed_data.append([measurement, prev_col_no] + temp_data)
+                temp_data = []  # Reset for new column number
+
+            temp_data.append(value)
+            prev_col_no = col_no
+
+        # Append remaining data
+        if temp_data:
+            transformed_data.append([measurement, prev_col_no] + temp_data)
+
+    # Convert to DataFrame
+    transformed_df = pd.DataFrame(transformed_data)
+    return transformed_df
 
 if __name__ == "__main__":
     Tk().withdraw()
@@ -32,22 +44,31 @@ if __name__ == "__main__":
         print("No file selected. Exiting.")
         exit()
 
+    print(f"Processing Tranform for file {file_name}")
+
+    xls = pd.ExcelFile(file_name)
+
+    # Load the data from both sheets
+    df_fret = pd.read_excel(xls, sheet_name='Fret')
+    df_rhod = pd.read_excel(xls, sheet_name='Rhod')
+
+    # Define the measurement types to extract
+    measurement_types = ["Time to Peak", "Amplitude of Peak", "Duration of Peak", "Area Under Curve"]
+
+    # Transform data for both sheets
+    transformed_fret = transform_data(df_fret)
+    transformed_rhod = transform_data(df_rhod)
+
     output_name = filedialog.asksaveasfilename(title="Save output file as", defaultextension=".xlsx",
                                                filetypes=[("Excel files", "*.xlsx")])
     if not output_name:
         print("No output file selected. Exiting.")
         exit()
-
-    # Load the uploaded Excel file
-    fret_df = pd.read_excel(file_name, sheet_name='Fret')
-    fret_transformed = extract_field(fret_df, field_name="Amplitude of Peak")
-    fret_transformed_df = pd.DataFrame.from_dict(fret_transformed, orient='index')
-
-    rhod_df = pd.read_excel(file_name, sheet_name='Rhod')
-    rhod_transformed = extract_field(rhod_df, field_name="Amplitude of Peak")
-    rhod_transformed_df = pd.DataFrame.from_dict(rhod_transformed, orient='index')
+    # Save to a new Excel file
 
     with pd.ExcelWriter(output_name) as writer:
-        fret_transformed_df.to_excel(writer, sheet_name='Fret')
-        rhod_transformed_df.T.to_excel(writer, sheet_name='Rhod')
+        transformed_fret.to_excel(writer, sheet_name="Fret", index=False)
+        transformed_rhod.to_excel(writer, sheet_name="Rhod", index=False)
+
+    print(f"Transformed data saved to {output_name}")
 
